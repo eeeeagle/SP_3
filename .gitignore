@@ -1,2 +1,7 @@
 # Project exclude paths
 /cmake-build-release/
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/SP_3.iml
+/.idea/vcs.xml

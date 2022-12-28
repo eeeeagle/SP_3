@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include <random>
+#include <algorithm>
 
 pthread_mutex_t mutex;
 int ret_index = -1;
@@ -38,12 +39,12 @@ void* find_value(void *ptr_args)
 
 void find_value_main(const int search_value, const int threads_num = 1)
 {
-    const int size = 150;
-    std::vector<int> array;
-
-
-    for(int i = 0; i < size; i++)
-        array.push_back(i);
+    std::vector<int> array = {};
+    for (int i = -5000; i <= 5000; array.push_back(i++));
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::shuffle(array.begin(), array.end(), mt);
+    size_t size = array.size();
 
     FindValueArgs args;
 
@@ -55,7 +56,7 @@ void find_value_main(const int search_value, const int threads_num = 1)
     pthread_attr_init(&attr);
     pthread_mutex_init(&mutex, nullptr);
 
-    int step = (int)((double)size/(double)threads_num);
+    int step = static_cast<int>(size) / threads_num;
     int pos = 0;
 
     args.array = array;

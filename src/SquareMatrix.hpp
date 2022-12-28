@@ -182,7 +182,7 @@ public:
 template <typename T>
 int SquareMatrix<T>::threads_num = 1;
 
-void matrix_mul_main(const char* file_matrix_a, const char* file_matrix_b, const size_t threads_num = 1)
+void matrix_mul_main(const char* file_matrix_a, const char* file_matrix_b, const int threads_num = 1)
 {
     SquareMatrix<T>::threads_num = threads_num;
 

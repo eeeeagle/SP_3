@@ -6,11 +6,11 @@
 #include <algorithm>
 
 pthread_mutex_t mutex;
-int ret_index = -1;
+volatile int ret_index = -1;
 
 struct FindValueArgs
 {
-    std::vector<int> array;
+    int const* array;
     int search_value;
     int start;
     int end;
@@ -22,31 +22,32 @@ void* find_value(void *ptr_args)
 
     double start_time = get_time();
 
-    pthread_mutex_lock(&mutex);
     for(int i = args->start; i < args->end; i++)
     {
+        if(i % 100 == 0)
+        {
+            if (ret_index >= args->end)
+                return nullptr;
+        }
         if(args->array[i] == args->search_value)
         {
+            pthread_mutex_lock(&mutex);
             if (ret_index < i)
                 ret_index = i;
+            pthread_mutex_unlock(&mutex);
         }
     }
-    pthread_mutex_unlock(&mutex);
+
 
     printf("Time of one thread working: %fs\n", get_time() - start_time);
     pthread_exit(nullptr);
 }
 
-void find_value_main(const int search_value, const int threads_num = 1)
+void find_value_main(const std::vector<int>& array, const int search_value, const int threads_num = 1)
 {
-    std::vector<int> array = {};
-    for (int i = -5000; i <= 5000; array.push_back(i++));
-    std::random_device rd;
-    std::mt19937 mt(rd());
-    std::shuffle(array.begin(), array.end(), mt);
     size_t size = array.size();
 
-    FindValueArgs args;
+    std::vector<FindValueArgs> args(threads_num);
 
     pthread_t threads[threads_num];
     pthread_attr_t attr;
@@ -59,16 +60,15 @@ void find_value_main(const int search_value, const int threads_num = 1)
     int step = static_cast<int>(size) / threads_num;
     int pos = 0;
 
-    args.array = array;
-    args.search_value = search_value;
-
     for(int k = 0; k < threads_num; k++)
     {
-        args.start = pos;
+        args[k].array = array.data();
+        args[k].search_value = search_value;
+        args[k].start = pos;
         pos += step;
-        args.end = (k == threads_num - 1) ? size : pos;
+        args[k].end = (k == threads_num - 1) ? size : pos;
 
-        if(pthread_create(&threads[k], &attr, find_value, (void *)&args))
+        if(pthread_create(&threads[k], &attr, find_value, (void *)&args[k]))
         {
             fprintf(stderr, "Error creating thread\n");
             exit(1);

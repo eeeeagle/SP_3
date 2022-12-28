@@ -2,8 +2,6 @@
 #include "FindValue.hpp"
 #include <getopt.h>
 
-
-
 int main(int argc, char* argv[])
 {
     int threads_num = 0;
@@ -55,6 +53,12 @@ int main(int argc, char* argv[])
         }
     }
 
+    std::vector<int> array = {};
+    for (int i = -50000; i <= 50000; array.push_back(i++));
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::shuffle(array.begin(), array.end(), mt);
+
     int buf;
     for(bool flag = true; flag; )
     {
@@ -74,16 +78,16 @@ int main(int argc, char* argv[])
                 flag = false;
                 break;
             case 1:
-                matrix_mul_main(file_matrix[0].c_str(), file_matrix[0].c_str());
+                matrix_mul_main(file_matrix[0].c_str(), file_matrix[1].c_str());
                 break;
             case 2:
-                matrix_mul_main(file_matrix[0].c_str(), file_matrix[0].c_str(), threads_num);
+                matrix_mul_main(file_matrix[0].c_str(), file_matrix[1].c_str(), threads_num);
                 break;
             case 3:
-                find_value_main(value);
+                find_value_main(array, value);
                 break;
             case 4:
-                find_value_main(value, threads_num);
+                find_value_main(array, value, threads_num);
                 break;
             default:
                 std::cout << "Wrong option! Try again.\n";

@@ -16,9 +16,9 @@ private:
 
     struct MulMatrixArgs
     {
-        std::vector<T> matrix_a;
-        std::vector<T> matrix_b;
-        std::vector<T> matrix_res;
+        T const* matrix_a;
+        T const* matrix_b;
+        T* matrix_res;
         size_t start;
         size_t end;
         size_t order = 0;
@@ -35,14 +35,12 @@ private:
         T tmp = 0;
         for(size_t i = args->start; i < args->end; i++)
         {
-            int count = 0;
             for(size_t k = 0; k < args->order; k++)
             {
-                int inc_str = 0;
                 for(size_t j = 0; j < args->order; j++)
-                    tmp += args->matrix_a[i * args->order + inc_str++] * args->matrix_b[j + k * args->order];
+                    tmp += args->matrix_a[i * args->order + j] * args->matrix_b[j * args->order + k];
 
-                args->matrix_res[i * args->order + count++] = tmp;
+                args->matrix_res[i * args->order + k] = tmp;
                 tmp = 0;
             }
         }
@@ -90,7 +88,7 @@ public:
     friend SquareMatrix operator*(const SquareMatrix& a, const SquareMatrix& b)
     {
         if(threads_num < 1)
-            throw std::runtime_error("Threads must be > 0:\n"
+            throw std::logic_error("Threads must be > 0:\n"
                                      "threads_num = " + std::to_string(threads_num));
         if(a.order != b.order)
             throw std::logic_error("SquareMatrix order mismatch:\n"
@@ -100,51 +98,36 @@ public:
         SquareMatrix c(a.order);
         double start_time = get_time();
 
-        /*
-        if(threads_num == 1)
+        std::vector<MulMatrixArgs> args(threads_num);
+        std::vector<pthread_t> threads(threads_num);
+        pthread_attr_t attr;
+
+        pthread_attr_init(&attr);
+
+        size_t step = a.order / threads_num;
+        size_t pos = 0;
+        for(size_t k = 0; k < threads_num; k++)
         {
-            for (int i = 0; i < c.order; i++)
+            args[k].matrix_a = a.data.data();
+            args[k].matrix_b = b.data.data();
+            args[k].matrix_res = c.data.data();
+
+            args[k].order = a.order;
+            args[k].start = pos;
+            pos += step;
+            args[k].end = (k == threads_num - 1) ? a.order : pos;
+
+            if (pthread_create(&threads[k], &attr, mul_parallel, (void *)&args[k]) != 0)
             {
-                for (int j = 0; j < c.order; j++)
-                {
-                    for (int k = 0; k < c.order; k++)
-                        c(i, j) += a(i, k) * b(k, j);
-                }
+                fprintf(stderr, "Error creating thread\n");
+                exit(-1);
             }
         }
-        else
-        {
-         */
-            std::vector<pthread_t> threads(threads_num);
-            pthread_attr_t attr;
-            struct MulMatrixArgs args;
+        pthread_attr_destroy(&attr);
 
-            pthread_attr_init(&attr);
+        for(size_t k = 0; k < threads_num; k++)
+            pthread_join(threads[k], nullptr);
 
-            args.matrix_a = a.data;
-            args.matrix_b = b.data;
-            args.matrix_res = c.data;
-            args.order = a.order;
-
-            size_t step = a.order / threads_num;
-            size_t pos = 0;
-            for(size_t k = 0; k < threads_num; k++)
-            {
-                args.start = pos;
-                pos += step;
-                args.end = (k == threads_num - 1) ? a.order : pos;
-
-                if (pthread_create(&threads[k], &attr, mul_parallel, (void *)&args) != 0)
-                {
-                    fprintf(stderr, "Error creating thread\n");
-                    exit(-1);
-                }
-            }
-            pthread_attr_destroy(&attr);
-
-            for(size_t k = 0; k < threads_num; k++)
-                pthread_join(threads[k], nullptr);
-        //}
         std::cout << "All time: " << get_time() - start_time << std::endl;
         return c;
     }

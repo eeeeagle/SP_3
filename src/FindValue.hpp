@@ -38,7 +38,6 @@ void* find_value(void *ptr_args)
         }
     }
 
-
     printf("Time of one thread working: %fs\n", get_time() - start_time);
     pthread_exit(nullptr);
 }

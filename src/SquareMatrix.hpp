@@ -182,4 +182,18 @@ public:
 template <typename T>
 int SquareMatrix<T>::threads_num = 1;
 
+void matrix_mul_main(const char* file_matrix_a, const char* file_matrix_b, const size_t threads_num = 1)
+{
+    SquareMatrix<T>::threads_num = threads_num;
+
+    SquareMatrix<T> a(file_matrix_a);
+    SquareMatrix<T> b(file_matrix_b);
+
+    std::cout << "Matrix A:\n" << a << "\n\n";
+    std::cout << "Matrix B:\n" << b << "\n\n";
+
+    std::cout << "Performing Matrix C = A * B ...\n";
+    SquareMatrix<T> c = a * b;
+    std::cout << "Matrix C:\n" << c << "\n\n";
+}
 #endif
